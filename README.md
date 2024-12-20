@@ -1,58 +1,111 @@
-## 📚 Spring Boot 애플리케이션을 ec2 서버에 배포하는 다양한 방법 실습
-협업 프로젝트를 진행하고 배포해보면서 다른 배포 방식들에 대한 궁금중이 생겼고 이러한 다양한 배포방법들을 직접 해보고 정리해볼려고 한다.
-
+## 📚 transfer-jar 브랜치
+로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
 </br>
 
-## ✏️ 배포 방법
-Spring Boot 애플리케이션을 EC2 서버에 배포하는 방법은 매우 다양하다.   
-대표적인 방법은 아래와 같다.
-1. jar 파일 ec2 서버에 전송
-2. ec2 서버에서 프로젝트 클론
-3. 도커 이미지 ec2 서버에 전송
+## ✏️ ec2 인스턴스 설정
+AMI 는 Amazon Linux 2023, 인스턴스 타입은 t2.medium 이다.
+프리티어인 t2.micro 를 사용하지 않은 이유는 서버에 직접 mysql, redis 서버를 설치하다 보니 cpu 사용량이 계속 100을 초과하여서 t2.midium 으로 하였다.=
+보안그룹의 인바운드 규칙에 ssh 로 서버에 접속하기 위한 SSH 트래픽과
+스프링 애플리케이션이 잘 실행되는지 확인하기 위한 TCO 트래픽의 8080 포트를 열어준다
 
-이 프로젝트에서는 위의 배포 방법들을 직접 수동으로 실습해보고  
-CI/CD 도구인 github-actions 를 활용해 수동으로 진행했던 배포 프로세스를 자동화할 예정이다.   
-또한, 다음 버전의 애플리케이션을 배포할때 현재 실행 중인 애플리케이션이 중단되지 않도록 무중단 배포에 대해서도 실습할 계획이다.
+## ✏️ mysql, redis 서버 실행
+현재 배포할려는 스프링 애플리케이션을 실행하기 위해선 mysql 서버와 redis 서버가 실행중이여야 한다.
+mysql 과 redis 서버를 실행하는 방법에는 대표적으로 아래의 3가지 방법이 있다.
+1. 직접 ec2 서버에 설치하여 실행하는 방법
+2. AWS 의 서비스 이용하는 방법
+3. 도커 이미지를 사용하는 방법이 있다.
+현재 배포 방법에서는 1번 방법인 직접 ec2 서버에 설치하여 실행할 예정이다.
+2번 방법은 ec2 서버에서 프로젝트를 클론받아 배포하는 build-clone 브랜치에서 사용할 예정이고
+3번 방법은 스프링 애플리케이션 실행 환경을 이미지로 만들어서 이미지를 ec2 서버로 전송하여 배포하는 trnasfer-image 브랜치에서 할 예정이다.
 
-mysql, redis 내용 추가해야됨
+## ✏️ .jar 파일을 ec2 서버에 전송 방법
+.jar 파일을 ec2 서버에 전송 방법에는 대표적으로 아래의 2가지 방법이 있다.
+1. scp 명령어 사용
+2. filezilla 사용
+현재 배포 방법에서는 첫번째 방법인 scp 명령어를 사용하는 방법만 할 예정이다.
+filezilla 는 gui 이기 때문에 글로 설명하기 어려워서 생략하도록하겠다.
+(하는 방법은 매우 간단하다)
 
-## ✏️ 브랜치 종류
-### transfer-jar
-- 로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
+### ✏️ 배포 방법 및 명령어
+ec2 서버 접속 및 설정
+```
+// ec2 서버 접속
+ssh -i ~/.ssh/deploy-key.pem ec2-user@3.39.251.119
 
-### clone-build
-- ec2 서버에서 프로젝트 클론하여 빌드 후 실행
+// ec2 서버 타임존 변경 (스케줄러 정상 작동을 위해)
+sudo timedatectl set-timezone Asia/Seoul
+// 변경 확인
+date
+```
+jdk17, rdeis, mysql 설치 및 실행
+```
+// 패키지 업데이트
+sudo yum update -y
 
-### transfer-image
-- 도커 이미지 ec2 서버에 전송
+// jdk17 설치
+sudo yum install java-17-amazon-corretto-devel
+// 설치 확인
+java --version
 
-###
-- 
+// redis 설치
+sudo yum install redis6
+// 설치 확인
+redis-server --version
+// redis 실행
+sudo systemctl restart redis6
+// 시스템 부팅시 redis 자동 실행 설정
+sudo systemctl enable redis6
 
-</br>
+// 주석
+sudo yum install https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
+// GPG Key를 2023 버전으로 갱신 (갱신해야지 아래의 설치 명령어에서 에러 안남)
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
+// mysql 설치
+sudo yum install mysql-community-server
+// 설치 확인
+mysql --version
+// mysql 실행
+sudo systemctl start mysqld
+// 시스템 부팅시 mysql 자동 실행 설정
+sudo systemctl enable mysqld
 
-## ✏️ 브랜치 설명
-각 브랜치별 배포 방법의 특징을 간략히 설명한다.
-각 브랜치별 배포 방법에 대한 구체적인 구현 내용은 해당 브랜치의 README 파일에 작성되어 있다.
-### transfer-jar
-- 로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
+// 실행중인 전체 프로그램 확인
+ps -ef
+```
+mysql 설정
+```
+// 임시 비밀번호 받기
+sudo grep 'temporary password' /var/log/mysqld.log
 
-- 특징
-    - 단순히 빌드된 .jar 파일을 서버로 전송하고 실행하면 되기 때문에 간단하고 빠르게 애플리케이션 실행 가능.
-    - 서버에 직접 Java 를 설치해야하고 로컬 서버의 Java 버전과 일치해야됨.
+// 위의 임시 비밀번호로 MySQL 서버에 접속 
+mysql -u root -p
 
-### clone-build
-- ec2 서버에서 프로젝트 클론하여 빌드 후 실행
+// root@localhost 계정 비밀번호 변경
+ALTER USER 'root'@'localhost' IDENTIFIED BY '변경할 비밀번호 입력';
+// 비밀번호 변경 반영 
+FLUSH PRIVILEGES;
+// 현재 MySQL 서버에 존재하는 모든 사용자 계정을 확인
+SELECT User, Host FROM mysql.user;
 
-- 특징
-    - 서버에 프로젝트 코드가 존재하며 Git 을 활용해 원하는 시점의 코드로 바로 롤백할 수 있음.
-    - 서버 자원이 애플리케이션 빌드 작업에 소모되므로 본래의 요청 처리나 운영에 영향을 줄 수 있음.
-    - 서버에 직접 Java 를 설치해야하고 로컬 서버의 Java 버전과 일치해야됨.
+// 필요한 데이터베이스 생성
+CREATE DATABASE deploy;
+```
+.jar 파일 ec2 서버로 전송 및 실행
+```
+// scp 명령어로 jar 파일 ec2 서버로 전송
+scp -i ~/.ssh/deploy-key.pem DainReview.jar ec2-user@3.39.251.119:/home/ec2-user/
 
-### transfer-image
-
-
-
+// ec2 서버에서 파일 전송 확인
+ls
+// 전송된 jar 파일 실행  
+sudo java -jar DainReview.jar
+// 백그라운드에서 종료 없이 실행
+nohup java -jar DainReview.jar &
+// nohup.out 파일 확인 
+cat nohup.out
+// 실시간 nohup.out 파일 확인 
+tail -f nohup.out
+```
 
 
 
