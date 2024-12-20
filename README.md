@@ -3,19 +3,21 @@
 </br>
 
 ## ✏️ ec2 인스턴스 설정
-AMI 는 Amazon Linux 2023, 인스턴스 타입은 t2.medium 이다.
-프리티어인 t2.micro 를 사용하지 않은 이유는 서버에 직접 mysql, redis 서버를 설치하다 보니 cpu 사용량이 계속 100을 초과하여서 t2.midium 으로 하였다.=
-보안그룹의 인바운드 규칙에 ssh 로 서버에 접속하기 위한 SSH 트래픽과
+- AMI 는 Amazon Linux 2023, 인스턴스 타입은 t2.medium 이다.   
+- 프리티어인 t2.micro 를 사용하지 않은 이유는 서버에 직접 mysql, redis 서버를 설치하다 보니  
+cpu 사용량이 계속 100을 초과하여서 t2.midium 으로 변경하였다.   
+- 보안그룹의 인바운드 규칙에 ssh 로 서버에 접속하기 위한 SSH 트래픽과   
 스프링 애플리케이션이 잘 실행되는지 확인하기 위한 TCO 트래픽의 8080 포트를 열어준다
 
 ## ✏️ mysql, redis 서버 실행
-현재 배포할려는 스프링 애플리케이션을 실행하기 위해선 mysql 서버와 redis 서버가 실행중이여야 한다.
+현재 배포할려는 스프링 애플리케이션을 실행하기 위해선 mysql 서버와 redis 서버가 실행중이여야 한다.    
 mysql 과 redis 서버를 실행하는 방법에는 대표적으로 아래의 3가지 방법이 있다.
 1. 직접 ec2 서버에 설치하여 실행하는 방법
 2. AWS 의 서비스 이용하는 방법
 3. 도커 이미지를 사용하는 방법이 있다.
-현재 배포 방법에서는 1번 방법인 직접 ec2 서버에 설치하여 실행할 예정이다.
-2번 방법은 ec2 서버에서 프로젝트를 클론받아 배포하는 build-clone 브랜치에서 사용할 예정이고
+
+현재 배포 방법에서는 1번 방법인 직접 ec2 서버에 설치하여 실행할 예정이다.   
+2번 방법은 ec2 서버에서 프로젝트를 클론받아 배포하는 build-clone 브랜치에서 사용할 예정이고   
 3번 방법은 스프링 애플리케이션 실행 환경을 이미지로 만들어서 이미지를 ec2 서버로 전송하여 배포하는 trnasfer-image 브랜치에서 할 예정이다.
 
 ## ✏️ .jar 파일을 ec2 서버에 전송 방법
@@ -27,7 +29,7 @@ filezilla 는 gui 이기 때문에 글로 설명하기 어려워서 생략하도
 (하는 방법은 매우 간단하다)
 
 ### ✏️ 배포 방법 및 명령어
-ec2 서버 접속 및 설정
+- ec2 서버 접속 및 설정
 ```
 // ec2 서버 접속
 ssh -i ~/.ssh/deploy-key.pem ec2-user@3.39.251.119
@@ -37,7 +39,7 @@ sudo timedatectl set-timezone Asia/Seoul
 // 변경 확인
 date
 ```
-jdk17, rdeis, mysql 설치 및 실행
+- jdk17, rdeis, mysql 설치 및 실행
 ```
 // 패키지 업데이트
 sudo yum update -y
@@ -72,7 +74,7 @@ sudo systemctl enable mysqld
 // 실행중인 전체 프로그램 확인
 ps -ef
 ```
-mysql 설정
+- mysql 설정
 ```
 // 임시 비밀번호 받기
 sudo grep 'temporary password' /var/log/mysqld.log
@@ -90,7 +92,7 @@ SELECT User, Host FROM mysql.user;
 // 필요한 데이터베이스 생성
 CREATE DATABASE deploy;
 ```
-.jar 파일 ec2 서버로 전송 및 실행
+- .jar 파일 ec2 서버로 전송 및 실행
 ```
 // scp 명령어로 jar 파일 ec2 서버로 전송
 scp -i ~/.ssh/deploy-key.pem DainReview.jar ec2-user@3.39.251.119:/home/ec2-user/
