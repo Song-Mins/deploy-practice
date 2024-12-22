@@ -28,13 +28,55 @@ sudo timedatectl set-timezone Asia/Seoul
 // 변경 확인
 date
 ```
-- jdk17 설치 및 실행
+- git, jdk17 설치 및 실행
 ```
 // 패키지 업데이트
 sudo yum update -y
+
+// git 설치
+sudo yum install git
+// 설치 확인
+git version
 
 // jdk17 설치
 sudo yum install java-17-amazon-corretto-devel
 // 설치 확인
 java --version
 ```
+- 프로젝트 클론
+```
+git clone https://github.com/Song-Mins/deploy-practice.git
+```
+- application.yaml 생성
+```
+// 경로 이동
+cd /home/ec2-user/deploy-practice/src/main
+// 디렉토리 생성
+mkdir resources
+// 경로 이동
+cd resources
+// application.yaml 생성
+vim application.yaml
+```
+- 애플리케이션 빌드
+```
+// 경로 이동
+cd /home/ec2-user/deploy-practice
+// 파일 실행 권한 부여
+chmod +x ./gradlew
+// 테스트 제외 빌드
+./gradlew clean build -x test
+```
+- .jar 파일 실행
+```
+// 경로 이동
+cd /home/ec2-user/deploy-practice
+// 실행
+java -jar backend-0.0.1-SNAPSHOT.jar
+```
+
+
+
+
+
+
