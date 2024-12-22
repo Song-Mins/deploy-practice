@@ -51,12 +51,12 @@ java --version
 
 // redis 설치
 sudo yum install redis6
-// 설치 확인
-redis-server --version
 // redis 실행
 sudo systemctl restart redis6
 // 시스템 부팅시 redis 자동 실행 설정
 sudo systemctl enable redis6
+// redis 실행 상태 확인
+sudo systemctl status redis6
 
 // 주석
 sudo yum install https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
