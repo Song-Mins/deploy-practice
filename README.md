@@ -19,7 +19,14 @@ Mysql 컨테이너,  Redis 컨테이너는 보안상 Spring Boot 컨테이너에
 </br>
 
 ## ✏️ 도커 이미지 저장소
-ㅇㅁㅇㅁㅁㅇㅁ
+로컬에서 도커 이미지를 푸시하고 EC2 서버에서 풀하기 위해서 도커 이미지 저장소가 필요하다.  
+고려한 도커 이미지 저장소는 아래와 같다.
+
+1. Docker Hub
+2. Amazon Elastic Container Registry (ECR)
+3. GitHub Container Registry (GHCR)
+
+이 브랜치에서는 간단하게 실습할 예정이기 때문에 Docker Hub 를 사용할 예정이다.
 
 </br>
 
