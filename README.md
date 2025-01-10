@@ -49,6 +49,8 @@
 ### pull-image-cicd
 - pull-image 브랜치의 배포방법을 자동화
 
+</br>
+
 ## ✏️ mysql, redis 서버 실행 방법
 현재 배포할려는 Spring Boot 애플리케이션을 실행하려면 mysql 서버와 redis 서버가 실행중 이여야 한다.    
 이를 실행하는 방법에는 아래와 같이 대표적으로 3가지 방법이 있다.
