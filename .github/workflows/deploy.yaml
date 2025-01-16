@@ -70,10 +70,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             pid=$(pgrep -f 'java -jar /home/${{ secrets.EC2_USER }}/app/deploy-practice.jar')
+            echo "$pid"
             if [ -z "$pid" ]; then
               echo "no process"
             else
-              echo "kill process: $pid"
+              echo "kill process - $pid"
               kill -9 "$pid"
               sleep 3
             fi
