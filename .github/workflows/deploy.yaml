@@ -1,0 +1,81 @@
+name: CI/CD Script
+
+on:
+  push:
+    branches:
+      - transfer-jar-cicd
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v3
+
+      - name: Java 17 환경 설정
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: application.yaml 파일 생성
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_YAML }}" > src/main/resources/application.yaml
+
+      - name: Gradle 빌드 - 테스트 생략
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build -x test
+
+      - name: EC2 서버에 JAR 파일 전송
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: build/libs/deploy-practice.jar
+          target: /home/${{ secrets.EC2_USER }}/app
+          strip_components: 2
+
+      - name: MySQL, Redis 정상 실행 확인 - 실행중 아니면 시작
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # MySQL 확인
+            if ! systemctl is-active --quiet mysqld; then
+              echo "MySQL 실행 중 아님 - MySQL 실행"
+              sudo systemctl start mysqld
+            else
+              echo "MySQL 정상 실행 중"
+            fi
+
+            # Redis 확인 
+            if ! systemctl is-active --quiet redis6; then
+              echo "Redis 실행 중 아님 - Redis 실행"
+              sudo systemctl start redis6
+            else
+              echo "Redis 정상 실행 중"
+            fi    
+
+      - name: EC2 서버에서 JAR 파일 실행
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            pid=$(pgrep -f 'java -jar /home/${{ secrets.EC2_USER }}/app/deploy-practice.jar')
+            if [ -z "$pid" ]; then
+              echo "no process"
+            else
+              echo "kill process"
+              kill -9 "$pid"
+              sleep 3
+            fi
+            
+            nohup java -jar /home/${{ secrets.EC2_USER }}/app/deploy-practice.jar > /home/${{ secrets.EC2_USER }}/app/log.txt 2>&1 &
