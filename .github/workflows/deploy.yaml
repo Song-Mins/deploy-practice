@@ -73,7 +73,7 @@ jobs:
             if [ -z "$pid" ]; then
               echo "no process"
             else
-              echo "kill process"
+              echo "kill process: $pid"
               kill -9 "$pid"
               sleep 3
             fi
