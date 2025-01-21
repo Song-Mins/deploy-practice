@@ -98,17 +98,18 @@ Mysql 컨테이너,  Redis 컨테이너는 보안상 Spring Boot 컨테이너에
 대표적인 도커 이미지 저장소는 아래와 같이 3가지가 있다.
 
 1. Docker Hub
-    - 도커에서 기본적으로 제공하는 공개 이미지 저장소
-    - ㅇㅇㅇ
+    - Docker의 기본 이미지 저장소로, Docker CLI 와 완벽하게 통합
+    - 커뮤니티에 공유된 수많은 공용 이미지에 접근 가능
       
 2. Amazon Elastic Container Registry (ECR)
-    - AWS 에서 제공하는 도커 이미지 전용 저장소
-    - AWS 서비스와 원활하게 연동 가능.
+    - AWS 서비스로, EC2, ECS, EKS와 같은 AWS 서비스와 긴밀히 통합
+    - IAM 을 통해 세밀한 권한 관리 가능
     - 보안 및 인증 관리가 뛰어남.
       
 3. GitHub Container Registry (GHCR)
-    - GitHub에서 제공하는 컨테이너 이미지 저장소.
-    - GitHub Actions 와 쉽게 연동 가능
+    - GitHub와 통합된 컨테이너 이미지 저장소로, GitHub Actions 와 원활하게 동작
+    - GitHub Actions에서 바로 사용 가능하여 CI/CD 파이프라인 설정이 간단
+    - 소스 코드와 이미지를 한 곳에서 관리 가능
 
 pull-image 브랜치에서는 1, 2번 방법, pull-image-cicd 브랜치에서는 3번 방법을 이용할 것이다.
 
