@@ -20,9 +20,6 @@ cd C:/project/deploy
 // spring 이미지 빌드 (태그는 커밋 SHA 값 -  git rev-parse HEAD)
 docker build -t docker.io/songker/deploy-spring:4428750d33e73a12f058a3b72d7011dbf2b5cc1c -f docker/Dockerfile-spring ./build/libs
 
-// latest 태그 이미지 생성
-docker build -t docker.io/songker/deploy-spring:latest -f docker/Dockerfile-spring ./build/libs
-
 // 프로젝트경로 아래의 도커 디렉토리로 이동
 cd docker
 
@@ -31,8 +28,12 @@ docker build -t docker.io/songker/deploy-mysql:V1.0.0 -f Dockerfile-mysql .
 docker build -t docker.io/songker/deploy-redis:V1.0.0 -f Dockerfile-redis .
 
 // latest 태그 이미지 생성
+docker build -t docker.io/songker/deploy-spring:latest -f docker/Dockerfile-spring ./build/libs
 docker tag docker.io/songker/deploy-mysql:V1.0.0 docker.io/songker/deploy-mysql:latest
 docker tag docker.io/songker/deploy-redis:V1.0.0 docker.io/songker/deploy-redis:latest
+
+// 이미지 확인
+docker images
 
 // 도커허브 로그인
 docker login
@@ -44,9 +45,6 @@ docker push docker.io/songker/deploy-redis:V1.0.0
 docker push docker.io/songker/deploy-spring:latest
 docker push docker.io/songker/deploy-mysql:latest
 docker push docker.io/songker/deploy-redis:latest
-
-// 이미지 확인
-docker images
 ```
 
 - ec2 서버 접속 및 설정
