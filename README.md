@@ -4,7 +4,7 @@
 </br></br>
 
 ## ✏️ 배포 방법 및 명령어
-- 도커파일
+- 도커파일 생성
 ```
 // 프로젝트 경로 아래의 docker 디렉토리에 도커파일 (Dockerfile-spring, Dockerfile-mysql, Dockerfile-redis) 생성
 // 파일 내용은 github 참고
