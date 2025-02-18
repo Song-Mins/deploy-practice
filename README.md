@@ -107,6 +107,6 @@ docker pull docker.io/songker/deploy-redis:latest
 docker run -d --name deploy-mysql --network deploy-network --env-file .env docker.io/songker/deploy-mysql:latest
 // redis 컨테이너 실행
 docker run -d --name deploy-redis --network deploy-network docker.io/songker/deploy-redis:latest
-// Spring Boot 컨테이너 실행
+// Spring Boot 컨테이너 실행 - (mysql, redis 컨테이너가 완전히 실행되면)
 docker run -d --name deploy-spring --network deploy-network -p 8080:8080 docker.io/songker/deploy-spring:latest
 ```
