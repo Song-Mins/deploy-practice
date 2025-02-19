@@ -1,0 +1,8 @@
+# Redis 공식 이미지 사용
+FROM redis:7.4
+
+# Redis 설정 파일 추가 (선택 사항)
+# COPY redis.conf /usr/local/etc/redis/redis.conf
+
+# 실행 명령어
+CMD ["redis-server"]
