@@ -84,9 +84,10 @@ cat .env
 // 파일내용
 MYSQL_ROOT_PASSWORD=abcd1234
 MYSQL_DATABASE=test
+```
 
-
--  네트워크 생성 및 Mysql, Redis, Spring Boot 이미지 풀 + 컨테이너 실행
+-  ec2 서버에서 네트워크 생성 및 이미지 풀 + 컨테이너 실행
+```
 // 네트워크 생성
 docker network create deploy-network
 
