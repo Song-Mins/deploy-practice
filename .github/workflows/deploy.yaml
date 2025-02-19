@@ -1,0 +1,105 @@
+name: CI/CD Script
+
+on:
+  push:
+    branches:
+      - pull-image-cicd
+    paths:
+      - 'src/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v3
+
+      - name: Java 17 환경 설정
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: application.yaml 파일 생성
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_YAML }}" > src/main/resources/application.yaml
+
+      - name: Gradle 빌드 - 테스트 생략
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build -x test
+
+      - name: 도커 이미지 빌드
+        run: docker build -f docker/Dockerfile-spring -t docker.io/songker/deploy-spring:${{ github.sha }} ./build/libs
+
+      - name: Docker Hub 에 로그인
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 이미지 푸시
+        run: |
+          docker push docker.io/songker/deploy-spring:${{ github.sha }}
+          docker tag docker.io/songker/deploy-spring:${{ github.sha }} docker.io/songker/deploy-spring:latest
+          docker push docker.io/songker/deploy-spring:latest
+
+      - name: 네트워크 확인 + MySQL, Redis 실행 확인
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # deploy-network 네트워크 존재 확인 
+            if docker network inspect deploy-network > /dev/null 2>&1; then
+              echo "deploy-network 네트워크 이미 존재함."
+            else
+              echo "deploy-network 네트워크 없음, 생성하겠음."
+              docker network create deploy-network
+            fi
+            
+            # MySQL 컨테이너 확인 및 실행
+            if [ -n "$(docker ps -q -f name=deploy-mysql)" ]; then
+              echo "MySQL 컨테이너 이미 실행중."
+            else
+              if [ -n "$(docker ps -aq -f name=deploy-mysql)" ]; then
+                echo "MySQL 컨테이너 존재하지만 실행상태 아님, 컨테이너 삭제후 다시 실행하겠음."
+                docker rm deploy-mysql
+                docker run -d --name deploy-mysql --network deploy-network --env-file .env docker.io/songker/deploy-mysql:latest
+              else
+                echo "MySQL 컨테이너 없음, 실행하겠음."
+                docker run -d --name deploy-mysql --network deploy-network --env-file .env docker.io/songker/deploy-mysql:latest
+              fi
+            fi
+            
+            # Redis 컨테이너 확인 및 실행
+            if [ -n "$(docker ps -q -f name=deploy-redis)" ]; then
+              echo "Redis 컨테이너 이미 실행중."
+            else
+              if [ -n "$(docker ps -aq -f name=deploy-redis)" ]; then
+                echo "Redis 컨테이너 존재하지만 실행상태 아님, 컨테이너 삭제후 다시 실행하겠음."
+                docker rm deploy-redis
+                docker run -d --name deploy-redis --network deploy-network docker.io/songker/deploy-redis:latest
+              else
+                echo "Redis 컨테이너 없음, 실행하겠음."
+                docker run -d --name deploy-redis --network deploy-network docker.io/songker/deploy-redis:latest
+              fi
+            fi
+            
+            echo "== 실행중인 컨테이너 목록 =="
+            docker ps -a
+
+      - name: Docker Hub 로그인 및 Spring 컨테이너 실행
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+            docker pull docker.io/songker/deploy-spring:latest
+            docker stop deploy-spring || true && docker rm deploy-spring || true
+            docker run -d --name deploy-spring --network deploy-network -p 8080:8080 docker.io/songker/deploy-spring:latest
