@@ -47,18 +47,13 @@ docker push docker.io/songker/deploy-mysql:latest
 docker push docker.io/songker/deploy-redis:latest
 ```
 
-- ec2 서버 접속 및 설정
+- ec2 서버 접속 및 초기설정
 ```
 // ec2 서버 접속
 ssh -i ~/.ssh/deploy-key.pem ec2-user@43.201.23.247
 
-// ec2 서버 타임존 변경 (스케줄러 정상 작동을 위해)
-sudo timedatectl set-timezone Asia/Seoul
-// 변경 확인
-date
-```
+
 - docker desktop 설치
-```
 // 패키지 업데이트
 sudo yum update -y
 // 도커 설치
@@ -78,9 +73,9 @@ sudo usermod -aG docker ec2-user
 newgrp docker
 // 확인
 groups
-```
+
+
 - .env 파일 생성
-```
 // /home/ec2-user 아래에 .env 파일 생성
 vim .env
 // 생성확인
@@ -89,9 +84,9 @@ cat .env
 // 파일내용
 MYSQL_ROOT_PASSWORD=abcd1234
 MYSQL_DATABASE=test
-```
+
+
 -  네트워크 생성 및 Mysql, Redis, Spring Boot 이미지 풀 + 컨테이너 실행
-```
 // 네트워크 생성
 docker network create deploy-network
 
