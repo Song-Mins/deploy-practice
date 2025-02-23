@@ -89,7 +89,7 @@ CREATE DATABASE deploy;
 - .jar 파일 ec2 서버로 전송 및 실행
 ```
 // scp 명령어로 jar 파일 ec2 서버로 전송
-scp -i ~/.ssh/deploy-key.pem DainReview.jar ec2-user@3.39.251.119:/home/ec2-user/
+scp -i ~/.ssh/deploy-key.pem deploy-pracitce.jar ec2-user@3.39.251.119:/home/ec2-user/
 
 // ec2 서버에서 파일 전송 확인
 ls
