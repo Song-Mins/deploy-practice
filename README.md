@@ -52,7 +52,7 @@ sudo systemctl enable redis6
 // redis 실행 상태 확인
 sudo systemctl status redis6
 
-// 주석
+// MySQL 8.0 저장소 추가하는 패키지 설치
 sudo yum install https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
 // GPG Key를 2023 버전으로 갱신 (갱신해야지 아래의 설치 명령어에서 에러 안남)
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
