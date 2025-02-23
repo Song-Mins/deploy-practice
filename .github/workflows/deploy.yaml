@@ -73,7 +73,7 @@ jobs:
           script: |
             pid=$(pgrep -f 'deploy-practice.jar')
             if [ -n "$pid" ]; then
-              echo "애플리케이션 실행중 - 종료하겠음"
+              echo "애플리케이션 실행중 - 종료하겠음 (PID: $pid) "
               kill -15 "$pid"  
               sleep 10
             else
