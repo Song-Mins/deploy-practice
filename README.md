@@ -71,13 +71,6 @@
 
 </br>
 
-## ✏️ EC2 인스턴스 초기 설정
-EC2 서버에서 해당 애플리케이션을 실행시키기 위해 초기설정이 필요하다.
-jdk 설치, 타임존 변경, mysql 실행, redis 실행 등등
-
-
-</br>
-
 ## ✏️ 도커 네트워크 및 EC2 보안그룹 설정 - pull-image, pull-image-cicd 브랜치
 Mysql 컨테이너,  Redis 컨테이너는 보안상 Spring Boot 컨테이너에서만 접근 가능하도록 제한해야한다.
 
