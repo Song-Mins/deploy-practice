@@ -51,11 +51,12 @@
 
 </br>
 
-## ✏️ mysql, redis 서버 실행 방법
+## ✏️ mysql, redis, nginx 서버 실행 방법
 현재 배포할려는 Spring Boot 애플리케이션을 실행하려면 mysql 서버와 redis 서버가 실행중 이여야 한다.    
+또한, 리버스 프록시 하기위해 nginx 서버가 실행중 이여한다.  
 이를 실행하는 방법에는 아래와 같이 대표적으로 3가지 방법이 있다.
 
-1. AWS 서비스 (RDS, ElastiCache) 이용
+1. AWS 서비스 (RDS, ElastiCache, Application Load Balancer) 이용
 - 자동 백업, 확장성, 고가용성 등의 기능을 통해 사용자는 애플리케이션 개발 및 운영에만 집중할 수 있다.
 - 사용량에 따라 비용이 발생한다.
 
