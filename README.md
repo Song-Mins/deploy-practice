@@ -110,8 +110,9 @@ vim default.conf
 
 // 설정 파일 문법 에러 체크
 sudo nginx -t 
-// 설정 파일 반영
+// 설정 파일 반영 - (둘 중 아무거나 사용)
 sudo nginx -s reload
+sudo systemctl reload nginx
 ```
 - .jar 파일 ec2 서버로 전송 및 실행
 ```
