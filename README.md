@@ -7,7 +7,7 @@
 - 도커파일 생성
 ```
 // 프로젝트 경로 아래의 docker 디렉토리에 도커파일 (Dockerfile-spring, Dockerfile-mysql, Dockerfile-redis) 생성
-// 파일 내용은 github 참고
+// 파일 내용 - github 참고
 ```
 - 프로젝트 빌드, 이미지 빌드 및 도커허브에 이미지 푸시
 ```
