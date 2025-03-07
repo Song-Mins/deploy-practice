@@ -14,15 +14,19 @@ pull-image 브랜치의 내용을 cicd 도구인 github actions 를 이용해서
 - 이미지 빌드 및 도커허브에 이미지 푸시
 ```
 // 프로젝트경로 아래의 도커 디렉토리로 이동
-cd C:/project/deploy/docker
+cd 프로젝트 경로
+cd docker
 
-// 이미지 빌드 (태그는 V0.0.0 형식)
-docker build -t docker.io/songker/deploy-mysql:V1.0.0 -f Dockerfile-mysql . 
+// mysql, redis 이미지 빌드 (태그는 V0.0.0 형식)
+docker build -t docker.io/songker/deploy-mysql:V1.0.0 -f Dockerfile-mysql .
 docker build -t docker.io/songker/deploy-redis:V1.0.0 -f Dockerfile-redis .
 
-// latest 태그 이미지 생성
+// latest 태그 mysql, redis 이미지 생성
 docker tag docker.io/songker/deploy-mysql:V1.0.0 docker.io/songker/deploy-mysql:latest
 docker tag docker.io/songker/deploy-redis:V1.0.0 docker.io/songker/deploy-redis:latest
+
+// 이미지 확인
+docker images
 
 // 도커허브 로그인
 docker login
@@ -32,14 +36,28 @@ docker push docker.io/songker/deploy-mysql:V1.0.0
 docker push docker.io/songker/deploy-redis:V1.0.0
 docker push docker.io/songker/deploy-mysql:latest
 docker push docker.io/songker/deploy-redis:latest
-
-// 이미지 확인
-docker images
 ```
 - ec2 서버 접속 및 초기설정
 ```
 // ec2 서버 접속
 ssh -i ~/.ssh/deploy-key.pem ec2-user@43.201.23.247
+
+// env 디렉토리 생성
+mkdir -p /home/ec2-user/env
+// env 디렉토리에 .env 파일 생성
+cd /home/ec2-user/env
+vim .env
+// 파일내용
+MYSQL_ROOT_PASSWORD=abcd1234
+MYSQL_DATABASE=test
+
+
+// scripts 디렉토리 생성
+mkdir -p /home/ec2-user/scripts
+// scripts 디렉토리에 init.sql 파일 생성
+// 파일내용 - mysql 초기 테이블 생성 sql문
+cd /home/ec2-user/scripts
+vim init.sql
 
 
 - Docker Engine 설치
@@ -62,21 +80,4 @@ sudo usermod -aG docker ec2-user
 newgrp docker
 // 확인
 groups
-
-
-- .env 파일 생성
-// /home/ec2-user 아래에 .env 파일 생성
-vim .env
-// 생성확인
-cat .env
-
-// 파일내용
-MYSQL_ROOT_PASSWORD=abcd1234
-MYSQL_DATABASE=test
-
-- init.sql 파일 생성
-// /home/ec2-user 아래에 init.sql 파일 생성
-vim init.sql
-// 생성확인
-cat init.sql
 ```
