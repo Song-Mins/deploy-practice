@@ -26,7 +26,7 @@ public class QuartzConfig {
                 .forJob(deleteUserJobDetail())
                 .withIdentity("deleteUserTrigger")
                 // 매일 새벽 3시
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 10 2 * * ?"))
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 55 20 * * ?"))
                 .build();
     }
 }
