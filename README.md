@@ -11,8 +11,10 @@
 ```
 - 프로젝트 빌드, 이미지 빌드 및 도커허브에 이미지 푸시
 ```
-// 프로젝트 clean 및 build (test 제외)
+// 프로젝트 경로로 이동
 cd 프로젝트 경로
+
+// 프로젝트 clean 및 build (test 제외)
 ./gradlew clean build -x test
 
 // spring 이미지 빌드 (태그는 커밋 SHA 값 -  git rev-parse HEAD)
@@ -25,7 +27,7 @@ cd docker
 docker build -t docker.io/songker/deploy-mysql:V1.0.0 -f Dockerfile-mysql . 
 docker build -t docker.io/songker/deploy-redis:V1.0.0 -f Dockerfile-redis .
 
-// latest 태그 이미지 생성
+// latest 태그 mysql, redis 이미지 생성
 docker build -t docker.io/songker/deploy-spring:latest -f docker/Dockerfile-spring ./build/libs
 docker tag docker.io/songker/deploy-mysql:V1.0.0 docker.io/songker/deploy-mysql:latest
 docker tag docker.io/songker/deploy-redis:V1.0.0 docker.io/songker/deploy-redis:latest
@@ -49,8 +51,25 @@ docker push docker.io/songker/deploy-redis:latest
 // ec2 서버 접속
 ssh -i ~/.ssh/deploy-key.pem ec2-user@43.201.23.247
 
+// env 디렉토리 생성
+mkdir -p /home/ec2-user/env
+// env 디렉토리에 .env 파일 생성
+cd /home/ec2-user/env
+vim .env
+// 파일내용
+MYSQL_ROOT_PASSWORD=abcd1234
+MYSQL_DATABASE=test
 
-- docker desktop 설치
+
+// scripts 디렉토리 생성
+mkdir -p /home/ec2-user/scripts
+// scripts 디렉토리에 init.sql 파일 생성
+// 파일내용 - mysql 초기 테이블 생성 sql문
+cd /home/ec2-user/scripts
+vim init.sql
+
+
+- Docker Engine 설치
 // 패키지 업데이트
 sudo yum update -y
 // 도커 설치
@@ -70,17 +89,6 @@ sudo usermod -aG docker ec2-user
 newgrp docker
 // 확인
 groups
-
-
-- .env 파일 생성
-// /home/ec2-user 아래에 .env 파일 생성
-vim .env
-// 생성확인
-cat .env
-
-// 파일내용
-MYSQL_ROOT_PASSWORD=abcd1234
-MYSQL_DATABASE=test
 ```
 
 -  ec2 서버에서 네트워크 생성 및 이미지 풀 + 컨테이너 실행
