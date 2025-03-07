@@ -11,10 +11,8 @@
 ```
 - 프로젝트 빌드, 이미지 빌드 및 도커허브에 이미지 푸시
 ```
-// 프로젝트경로로 이동
-cd C:/project/deploy
-
 // 프로젝트 clean 및 build (test 제외)
+cd 프로젝트 경로
 ./gradlew clean build -x test
 
 // spring 이미지 빌드 (태그는 커밋 SHA 값 -  git rev-parse HEAD)
@@ -46,7 +44,6 @@ docker push docker.io/songker/deploy-spring:latest
 docker push docker.io/songker/deploy-mysql:latest
 docker push docker.io/songker/deploy-redis:latest
 ```
-
 - ec2 서버 접속 및 초기설정
 ```
 // ec2 서버 접속
