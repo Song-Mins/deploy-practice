@@ -105,7 +105,13 @@ docker pull docker.io/songker/deploy-redis:latest
 
 
 // mysql 컨테이너 실행
-docker run -d --name deploy-mysql --network deploy-network --env-file .env docker.io/songker/deploy-mysql:latest
+docker run -d \
+  --name deploy-mysql \
+  --network deploy-network \
+  --env-file /home/ec2-user/env/.env \
+  -v mysql-data:/var/lib/mysql \
+  -v /home/ec2-user/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql \
+  docker.io/songker/deploy-mysql:latest
 // redis 컨테이너 실행
 docker run -d --name deploy-redis --network deploy-network docker.io/songker/deploy-redis:latest
 // Spring Boot 컨테이너 실행 - (mysql, redis 컨테이너가 완전히 실행되면)
