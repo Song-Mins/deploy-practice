@@ -1,63 +1,217 @@
-## 📚 Spring Boot 애플리케이션을 ec2 서버에 배포하는 다양한 방법 실습
-협업 프로젝트를 진행하고 배포해보면서 다른 배포 방식들에 대한 궁금중이 생겼고 이러한 다양한 배포방법들을 직접 해보고 정리해볼려고 한다.
+## 📚 pull-image 브랜치
+로컬에서 빌드한 도커 이미지를 ec2 서버에서 pull 받아 컨테이너 실행
 
-</br>
+</br></br>
 
-## ✏️ 배포 방법
-Spring Boot 애플리케이션을 EC2 서버에 배포하는 방법은 매우 다양하다.   
-대표적인 방법은 아래와 같다.
-1. jar 파일 ec2 서버에 전송
-2. ec2 서버에서 프로젝트 클론
-3. 도커 이미지 ec2 서버에 전송
+## ✏️ 배포 방법 및 명령어
+- 도커파일 생성
+```
+// 프로젝트 경로 아래의 docker 디렉토리에 도커파일 (Dockerfile-spring, Dockerfile-mysql, Dockerfile-redis, Dockerfile-nginx) 생성
+// 파일 내용 - github 참고
+```
+- 이미지 빌드 + 도커허브에 이미지 푸시
+```
+// 프로젝트 경로로 이동
+cd 프로젝트 경로
 
-이 프로젝트에서는 위의 배포 방법들을 직접 수동으로 실습해보고  
-CI/CD 도구인 github-actions 를 활용해 수동으로 진행했던 배포 프로세스를 자동화할 예정이다.   
-또한, 다음 버전의 애플리케이션을 배포할때 현재 실행 중인 애플리케이션이 중단되지 않도록 무중단 배포에 대해서도 실습할 계획이다.
+// 프로젝트 clean 및 build (test 제외)
+./gradlew clean build -x test
 
-mysql, redis 내용 추가해야됨
+// spring, nginx 이미지 빌드
+// 태그는 커밋 SHA 값 (git rev-parse HEAD), V0.0 형식
+docker build -t docker.io/songker/deploy-spring:4428750d33e73a12f058a3b72d7011dbf2b5cc1c -f docker/Dockerfile-spring ./build/libs
+docker build -t docker.io/songker/deploy-nginx:V1.0 -f docker/Dockerfile-nginx ./nginx
 
-## ✏️ 브랜치 종류
-### transfer-jar
-- 로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
+// 프로젝트경로 아래의 도커 디렉토리로 이동
+cd docker
 
-### clone-build
-- ec2 서버에서 프로젝트 클론하여 빌드 후 실행
+// mysql, redis 이미지 빌드 (태그는 V0.0 형식)
+docker build -t docker.io/songker/deploy-mysql:V1.0 -f Dockerfile-mysql .
+docker build -t docker.io/songker/deploy-redis:V1.0 -f Dockerfile-redis .
 
-### transfer-image
-- 도커 이미지 ec2 서버에 전송
+// latest 태그 spring, mysql, redis, nginx 이미지 생성
+docker tag docker.io/songker/deploy-spring:4428750d33e73a12f058a3b72d7011dbf2b5cc1c docker.io/songker/deploy-spring:latest
+docker tag docker.io/songker/deploy-mysql:V1.0 docker.io/songker/deploy-mysql:latest
+docker tag docker.io/songker/deploy-redis:V1.0 docker.io/songker/deploy-redis:latest
+docker tag docker.io/songker/deploy-nginx:V1.0 docker.io/songker/deploy-nginx:latest
 
-###
-- 
-
-</br>
-
-## ✏️ 브랜치 설명
-각 브랜치별 배포 방법의 특징을 간략히 설명한다.
-각 브랜치별 배포 방법에 대한 구체적인 구현 내용은 해당 브랜치의 README 파일에 작성되어 있다.
-### transfer-jar
-- 로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
-
-- 특징
-    - 단순히 빌드된 .jar 파일을 서버로 전송하고 실행하면 되기 때문에 간단하고 빠르게 애플리케이션 실행 가능.
-    - 서버에 직접 Java 를 설치해야하고 로컬 서버의 Java 버전과 일치해야됨.
-
-### clone-build
-- ec2 서버에서 프로젝트 클론하여 빌드 후 실행
-
-- 특징
-    - 서버에 프로젝트 코드가 존재하며 Git 을 활용해 원하는 시점의 코드로 바로 롤백할 수 있음.
-    - 서버 자원이 애플리케이션 빌드 작업에 소모되므로 본래의 요청 처리나 운영에 영향을 줄 수 있음.
-    - 서버에 직접 Java 를 설치해야하고 로컬 서버의 Java 버전과 일치해야됨.
-
-### transfer-image
+// 이미지 확인
+docker images
 
 
+// 도커허브 로그인
+docker login
+
+// 이미지 푸시
+docker push docker.io/songker/deploy-spring:4428750d33e73a12f058a3b72d7011dbf2b5cc1c
+docker push docker.io/songker/deploy-mysql:V1.0
+docker push docker.io/songker/deploy-redis:V1.0
+docker push docker.io/songker/deploy-nginx:V1.0
+docker push docker.io/songker/deploy-spring:latest
+docker push docker.io/songker/deploy-mysql:latest
+docker push docker.io/songker/deploy-redis:latest
+docker push docker.io/songker/deploy-nginx:latest
+```
+- ec2 서버 초기설정
+```
+// ec2 서버 접속
+ssh -i ~/.ssh/deploy-key.pem ec2-user@3.34.97.141
 
 
+// env 디렉토리 생성
+mkdir -p /home/ec2-user/env
+// env 디렉토리에 .env 파일 생성
+cd /home/ec2-user/env
+vim .env
+// 파일내용
+MYSQL_ROOT_PASSWORD=abcd1234
+MYSQL_DATABASE=test
+
+// scripts 디렉토리 생성
+mkdir -p /home/ec2-user/scripts
+// scripts 디렉토리에 init.sql 파일 생성
+// 파일내용 - mysql 초기 테이블 생성 sql문
+cd /home/ec2-user/scripts
+vim init.sql
 
 
+// 패키지 업데이트
+sudo yum update -y
+
+// cronie 설치
+sudo yum install -y cronie
+
+// 도커 설치
+sudo yum install docker -y
+// 설치 확인
+docker --version
+// 도커 실행
+sudo systemctl start docker
+// 자동실행 설정 
+sudo systemctl enable docker
+// 도커 실행 상태 확인
+sudo systemctl status docker
+
+// docker 그룹 생성 후 사용자 추가 -> sudo 없이 docker 실행 가능
+sudo usermod -aG docker ec2-user
+// 그룹 변경을 적용
+newgrp docker
+// 확인
+groups
 
 
+// 네트워크 생성
+docker network create deploy-network
 
 
+// mysql, redis, spring, nginx 이미지 풀
+docker pull docker.io/songker/deploy-mysql:latest
+docker pull docker.io/songker/deploy-redis:latest
+docker pull docker.io/songker/deploy-spring:latest
+docker pull docker.io/songker/deploy-nginx:latest
 
+
+// mysql 컨테이너 실행
+docker run -d \
+  --name deploy-mysql \
+  --network deploy-network \
+  --env-file /home/ec2-user/env/.env \
+  -v mysql-data:/var/lib/mysql \
+  -v /home/ec2-user/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql \
+  docker.io/songker/deploy-mysql:latest
+
+// redis 컨테이너 실행
+docker run -d --name deploy-redis --network deploy-network docker.io/songker/deploy-redis:latest
+
+// spring 컨테이너 실행
+// mysql, redis 컨테이너가 완전히 실행되면 실행
+// deploy-spring-blue 이름의 컨테이너가 실행중이어야지 nginx 컨테이너 초기 실행 가능
+docker run -d --name deploy-spring-blue --network deploy-network docker.io/songker/deploy-spring:latest
+
+
+// 인증서 저장 디렉토리 생성
+mkdir -p /home/ec2-user/certs/live/deploy-practice.p-e.kr
+
+// 챌린지 파일 저장 디렉토리 생성
+mkdir -p /home/ec2-user/webroot
+
+// 더미 인증서 생성
+openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+  -keyout /home/ec2-user/certs/live/deploy-practice.p-e.kr/privkey.pem \
+  -out   /home/ec2-user/certs/live/deploy-practice.p-e.kr/fullchain.pem \
+  -subj "/CN=deploy-practice.p-e.kr"
+
+// options-ssl-nginx.conf 다운
+curl -sSfLo /home/ec2-user/certs/options-ssl-nginx.conf \
+  https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
+
+// ssl-dhparams.pem 생성
+openssl dhparam -out /home/ec2-user/certs/ssl-dhparams.pem 2048
+
+
+// nginx 컨테이너 실행
+docker run -d \
+  --name deploy-nginx \
+  --network deploy-network \
+  -p 80:80 -p 443:443 \
+  -v /home/ec2-user/webroot:/var/www/html:ro \
+  -v /home/ec2-user/certs:/etc/letsencrypt \
+  docker.io/songker/deploy-nginx:latest
+
+
+// 더미 인증서 삭제 
+sudo rm -rf /home/ec2-user/certs/live/deploy-practice.p-e.kr
+sudo rm -rf /home/ec2-user/certs/archive/deploy-practice.p-e.kr
+sudo rm -rf /home/ec2-user/certs/renewal/deploy-practice.p-e.kr.conf
+
+
+// certbot 컨테이너로 인증서 발급
+docker run --rm \
+  -v /home/ec2-user/webroot:/var/www/html \
+  -v /home/ec2-user/certs:/etc/letsencrypt \
+  certbot/certbot certonly \
+    --webroot \
+    -w /var/www/html \
+    -d deploy-practice.p-e.kr \
+    --agree-tos \
+    --email ssoogg5309@gmail.com \
+    --non-interactive
+
+// nginx 리로드
+docker exec deploy-nginx nginx -s reload
+
+
+// 갱신 작엉 시물레이션
+docker run --rm \
+  -v /home/ec2-user/webroot:/var/www/html \
+  -v /home/ec2-user/certs:/etc/letsencrypt \
+  certbot/certbot renew --dry-run
+
+
+// 인증서 갱신 스크립트 생성
+cd /home/ec2-user/scripts
+vim renew_cert.sh
+// 파일 내용
+#!/bin/bash
+set -e
+# 갱신
+/usr/bin/docker run --rm \
+  -v /home/ec2-user/webroot:/var/www/html \
+  -v /home/ec2-user/certs:/etc/letsencrypt \
+  certbot/certbot renew --quiet
+# nginx 리로드
+docker exec deploy-nginx nginx -s reload
+
+// 로그 파일 생성
+sudo mkdir -p /var/log/letsencrypt
+cd /var/log/letsencrypt
+sudo vim renew.log
+
+
+// 인증서 갱신 스케줄러 등록
+crontab -e
+// 명령어 내용
+0 2 * * * /home/ec2-user/scripts/renew_cert.sh >> /var/log/letsencrypt/renew.log 2>&1
+// 등록 스케줄러 확인
+crontab -l
+```
