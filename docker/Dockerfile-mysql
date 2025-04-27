@@ -1,0 +1,5 @@
+# MySQL 공식 이미지 사용
+FROM mysql:8.0
+
+# 실행 명령어
+CMD ["mysqld"]
