@@ -1,63 +1,139 @@
-## 📚 Spring Boot 애플리케이션을 ec2 서버에 배포하는 다양한 방법 실습
-협업 프로젝트를 진행하고 배포해보면서 다른 배포 방식들에 대한 궁금중이 생겼고 이러한 다양한 배포방법들을 직접 해보고 정리해볼려고 한다.
+## 📚 clone-build-cicd 브랜치
+clone-build 브랜치의 내용을 cicd 도구인 github actions 를 이용해서 자동화
 
-</br>
+</br></br>
 
-## ✏️ 배포 방법
-Spring Boot 애플리케이션을 EC2 서버에 배포하는 방법은 매우 다양하다.   
-대표적인 방법은 아래와 같다.
-1. jar 파일 ec2 서버에 전송
-2. ec2 서버에서 프로젝트 클론
-3. 도커 이미지 ec2 서버에 전송
-
-이 프로젝트에서는 위의 배포 방법들을 직접 수동으로 실습해보고  
-CI/CD 도구인 github-actions 를 활용해 수동으로 진행했던 배포 프로세스를 자동화할 예정이다.   
-또한, 다음 버전의 애플리케이션을 배포할때 현재 실행 중인 애플리케이션이 중단되지 않도록 무중단 배포에 대해서도 실습할 계획이다.
-
-mysql, redis 내용 추가해야됨
-
-## ✏️ 브랜치 종류
-### transfer-jar
-- 로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
-
-### clone-build
-- ec2 서버에서 프로젝트 클론하여 빌드 후 실행
-
-### transfer-image
-- 도커 이미지 ec2 서버에 전송
-
-###
-- 
-
-</br>
-
-## ✏️ 브랜치 설명
-각 브랜치별 배포 방법의 특징을 간략히 설명한다.
-각 브랜치별 배포 방법에 대한 구체적인 구현 내용은 해당 브랜치의 README 파일에 작성되어 있다.
-### transfer-jar
-- 로컬에서 빌드한 .jar 파일을 ec2 서버에 전송하여 실행
-
-- 특징
-    - 단순히 빌드된 .jar 파일을 서버로 전송하고 실행하면 되기 때문에 간단하고 빠르게 애플리케이션 실행 가능.
-    - 서버에 직접 Java 를 설치해야하고 로컬 서버의 Java 버전과 일치해야됨.
-
-### clone-build
-- ec2 서버에서 프로젝트 클론하여 빌드 후 실행
-
-- 특징
-    - 서버에 프로젝트 코드가 존재하며 Git 을 활용해 원하는 시점의 코드로 바로 롤백할 수 있음.
-    - 서버 자원이 애플리케이션 빌드 작업에 소모되므로 본래의 요청 처리나 운영에 영향을 줄 수 있음.
-    - 서버에 직접 Java 를 설치해야하고 로컬 서버의 Java 버전과 일치해야됨.
-
-### transfer-image
+## ✏️ 배포 방법 및 명령어
+- 워크플로우 파일 생성
+```
+// 프로젝트 경로 아래의 .github/workflows 디렉토리에 워크플로우 파일 (deploy.yaml) 생성
+// 파일 내용 - github 참고
+```
+- ec2 서버 초기설정
+```
+// ec2 서버 접속
+ssh -i ~/.ssh/deploy-key.pem ec2-user@3.39.251.119
 
 
+// ec2 서버 타임존 변경 (스케줄러 정상 작동을 위해)
+sudo timedatectl set-timezone Asia/Seoul
+// 변경 확인
+date
 
 
+// app 디렉토리 생성
+mkdir -p /home/ec2-user/app
+// app 디렉토리에 deploy-practice.log 파일 생성
+cd /home/ec2-user/app
+vim deploy-practice.log
+
+// scripts 디렉토리 생성
+mkdir -p /home/ec2-user/scripts
+// scripts 디렉토리에 init.sql 파일 생성
+// 파일내용 - mysql 초기 테이블 생성 sql문
+cd /home/ec2-user/scripts
+vim init.sql
 
 
+- git, jdk17, rdeis, mysql, nginx 설치 및 실행
+// 패키지 업데이트
+sudo yum update -y
+
+// git 설치
+sudo yum install git -y
+// 설치 확인
+git --version
+
+// jdk17 설치
+sudo yum install java-17-amazon-corretto-devel -y
+// 설치 확인
+java --version
+
+// redis 설치
+sudo yum install redis6 -y
+// redis 실행
+sudo systemctl start redis6
+// 시스템 부팅시 redis 자동 실행 설정
+sudo systemctl enable redis6
+// redis 실행 상태 확인
+sudo systemctl status redis6
+
+// MySQL 8.0 저장소 추가하는 패키지 설치
+sudo yum install https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm -y
+// GPG Key를 2023 버전으로 갱신 (갱신해야지 아래의 설치 명령어에서 에러 안남)
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
+// mysql 설치
+sudo yum install mysql-community-server -y
+// mysql 실행
+sudo systemctl start mysqld
+// 시스템 부팅시 mysql 자동 실행 설정
+sudo systemctl enable mysqld
+// mysql 실행 상태 확인
+sudo systemctl status mysqld
+
+// nginx 설치
+sudo yum install nginx -y
+// nginx 실행
+sudo systemctl start nginx
+// 시스템 부팅시 nginx 자동 실행 설정
+sudo systemctl enable nginx
+// nginx 실행 상태 확인
+sudo systemctl status nginx
 
 
+- mysql 설정
+// 임시 비밀번호 받기
+sudo grep 'temporary password' /var/log/mysqld.log
+// 위의 임시 비밀번호로 MySQL 서버에 접속 
+mysql -u root -p
+
+// root@localhost 계정 비밀번호 변경
+ALTER USER 'root'@'localhost' IDENTIFIED BY '변경할 비밀번호 입력';
+// 비밀번호 변경 반영 
+FLUSH PRIVILEGES;
+// 현재 MySQL 서버에 존재하는 모든 사용자 계정을 확인
+SELECT User, Host FROM mysql.user;
+
+// 데이터베이스 생성
+CREATE DATABASE deploy;
+// 데이터베이스 확인
+SHOW DATABASES;
+// 데이터베이스 선택
+USE deploy;
+// init.sql 실행
+SOURCE /home/ec2-user/scripts/init.sql;
+// 테이블 확인
+SHOW TABLES;
 
 
+- nginx 설정
+// default.conf 파일 생성
+// 파일 내용 - github 참고
+cd /etc/nginx/conf.d/
+sudo vim default.conf
 
+// Certbot 설치
+sudo yum install certbot python3-certbot-nginx -y
+// ssl 인증서 발급 - (nginx 플러그인 사용)
+sudo certbot --nginx -d deploy-practice.p-e.kr --email ssoogg5309@gmail.com --agree-tos --no-eff-email --redirect
+// 정상 적용 확인
+sudo certbot certificates
+// 설정 파일 변경 됐는지 확인
+cd /etc/nginx/conf.d/
+vim default.conf
+// 설정 파일 리로드는 필요없음 - nginx 플러그인 사용해서 ssl 인증서 발급 받을때 리로드가 됨
+
+
+- 프로젝트 클론
+cd /home/ec2-user/app
+git clone -b clone-build-cicd --single-branch https://github.com/Song-Mins/deploy-practice.git
+
+
+- application.yaml 생성
+// 디렉토리 생성
+mkdir /home/ec2-user/app/deploy-practice/src/main/resources
+// 경로 이동
+cd /home/ec2-user/app/deploy-practice/src/main/resources
+// application.yaml 생성
+vim application.yaml
+```
