@@ -1,0 +1,144 @@
+name: CI/CD Script
+
+on:
+  push:
+    branches:
+      - clone-build-cicd
+    paths:
+      - 'src/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: EC2 서버에서 MySQL, Redis 정상 실행중인지 확인
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            
+            # MySQL 확인
+            if systemctl is-active --quiet mysqld; then
+              echo "📢 MySQL 정상 실행 중"
+            else
+              echo "📢 MySQL 실행중이 아님  - 배포 중단"
+              exit 1
+            fi
+            
+            # Redis 확인 
+            if systemctl is-active --quiet redis6; then
+              echo "📢 Redis 정상 실행 중"
+            else
+              echo "📢 Redis 실행중이 아님  - 배포 중단"
+              exit 1
+            fi
+            
+            # Nginx 확인 
+            if systemctl is-active --quiet nginx; then
+              echo "📢 Nginx 정상 실행 중"
+            else
+              echo "📢 Nginx 실행중이 아님  - 배포 중단"
+              exit 1
+            fi
+
+      - name: EC2 서버에서 git pull + build 및 jar 파일 실행
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 명령어 실패 시 즉시 스크립트 종료
+            set -e
+            
+            # 배포할 jar 파일 이름
+            JAR_NAME="deploy-practice.jar" 
+            
+            # 경로 이동
+            cd /home/${{ secrets.EC2_USER }}/app/deploy-practice
+            
+            # 원격 변경사항으로 업데이트
+            git fetch origin
+            git reset --hard origin/clone-build-cicd
+            
+            # 파일 실행 권한 부여
+            chmod +x ./gradlew
+            # 애플리케이션 빌드 - 테스트 제외
+            ./gradlew clean build -x test
+
+            # 8080 포트에서 jar 파일 실행 여부 확인
+            if lsof -i:8080 > /dev/null; then
+              PID_8080=$(lsof -t -i:8080) 
+              if ps -p $PID_8080 -o command= | grep -q "$JAR_NAME"; then
+                CURRENT_PORT=8080
+                NEW_PORT=8081
+              fi
+            fi
+            
+            # 8081 포트에서 jar 파일 실행 여부 확인 (8080에서 실행 중인 jar가 없을 경우만)
+            if [ -z "$CURRENT_PORT" ] && lsof -i:8081 > /dev/null; then
+              PID_8081=$(lsof -t -i:8081)
+              if ps -p $PID_8081 -o command= | grep -q "$JAR_NAME"; then
+                CURRENT_PORT=8081
+                NEW_PORT=8080
+              fi
+            fi
+            
+            # 8080, 8081 포트 모두 jar 파일 실행중 아니면 8080 포트로 실행
+            if [ -z "$CURRENT_PORT" ]; then
+              echo "📢 실행중인 .jar 파일 없음. 8080 포트에서 실행하겠음."
+              CURRENT_PORT=""
+              NEW_PORT=8080
+            fi
+            
+            echo "📢 기존 포트: $CURRENT_PORT, 새 애플리케이션 배포 포트: $NEW_PORT"
+            
+            # 새 jar 파일 백그라운드에서 실행
+            nohup java -jar -Dserver.port=$NEW_PORT /home/${{ secrets.EC2_USER }}/app/deploy-practice/build/libs/deploy-practice.jar > /home/${{ secrets.EC2_USER }}/app/deploy-practice.log 2>&1 &
+            
+            # 새 애플리케이션 정상 실행 여부 확인 (최대 60초 대기)
+            for i in {1..12}; do
+              if curl -s http://localhost:$NEW_PORT/actuator/health | grep -q '"status":"UP"'; then
+                echo "📢 새 애플리케이션 헬스 체크 성공"
+                break
+              else
+                echo "📢 새 애플리케이션 실행 대기중..."
+                sleep 5
+              fi
+            done
+
+            # health 체크 실패시 종료
+            if ! curl -s http://localhost:$NEW_PORT/actuator/health | grep -q '"status":"UP"'; then
+              echo "📢 새 애플리케이션이 포트 $NEW_PORT 에서 정상 실행되지 않았음"
+              exit 1  
+            fi
+            
+            # default.conf 설정 파일 변경 - 프록시 대상 변경
+            if [ -n "$CURRENT_PORT" ]; then
+              sudo sed -i "s/server localhost:$CURRENT_PORT;/server localhost:$NEW_PORT;/" /etc/nginx/conf.d/default.conf
+              sudo systemctl reload nginx
+              echo "📢 nginx 프록시 대상 변경 - $CURRENT_PORT 포트 -> $NEW_PORT 포트"
+            fi
+            
+            # 기존 애플리케이션 종료 (존재하는 경우)
+            if [ -n "$CURRENT_PORT" ]; then
+              if [ "$CURRENT_PORT" = "8080" ]; then
+                OLD_PID=$PID_8080
+              else
+                OLD_PID=$PID_8081
+              fi
+              echo "📢 $CURRENT_PORT 포트에서 실행 중인 프로세스($OLD_PID)에 SIGTERM 종료 신호 전송"
+              kill -TERM $OLD_PID
+              # graceful shutdown 대기 (30초 + 여유 5초)
+              sleep 35
+              if ps -p $OLD_PID > /dev/null; then
+                echo "📢 프로세스($OLD_PID) 가 종료되지 않아 SIGKILL 종료 신호 전송"
+                kill -KILL $OLD_PID
+              else
+                echo "📢 기존 애플리케이션이 정상적으로 종료되었음"
+              fi
+            fi
